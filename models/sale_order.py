@@ -6,10 +6,10 @@ class SaleOrderLine(models.Model):
 
     qty_available = fields.Float(string='Cant disponible', compute='_compute_qty_available', store=False)
     
-    margin_disp = fields.Float(compute='_product_margin_disp', digits=dp.get_precision('Product Price'), store=True)
-    price_tax_disp = fields.Monetary(compute='_compute_amount_disp', string='Imp precio', readonly=True, store=True)
-    price_total_disp = fields.Monetary(compute='_compute_amount_disp', string='Total precio', readonly=True, store=True)
-    price_subtotal_disp = fields.Monetary(compute='_compute_amount_disp', string='Total disp', readonly=True, store=True)    
+    margin_disp = fields.Float(compute='_product_margin_disp', digits=dp.get_precision('Product Price'), store=False)
+    price_tax_disp = fields.Monetary(compute='_compute_amount_disp', string='Imp precio', readonly=True, store=False)
+    price_total_disp = fields.Monetary(compute='_compute_amount_disp', string='Total precio', readonly=True, store=False)
+    price_subtotal_disp = fields.Monetary(compute='_compute_amount_disp', string='Total disp', readonly=True, store=False)    
     product_uom_qty = fields.Float(digits=(16,0), default=1)
     desc_price_unit = fields.Float()
     base_price_unit = fields.Float()
@@ -59,10 +59,10 @@ class SaleOrderLine(models.Model):
 class SaleOrder(models.Model):
     _inherit = "sale.order"
     
-    margin_disp = fields.Monetary(compute='_product_margin_disp', currency_field='currency_id', digits=dp.get_precision('Product Price'), store=True)
-    margin_porciento = fields.Float(compute='_product_margin_porc', digits=dp.get_precision('Product Price'), store=True)
-    margin_porciento_disp = fields.Float(compute='_product_margin_disp', digits=dp.get_precision('Product Price'), store=True)
-    amount_untaxed_disp = fields.Monetary(string='Base imponible', store=True, readonly=True, compute='_amount_all_disp')
+    margin_disp = fields.Monetary(compute='_product_margin_disp', currency_field='currency_id', digits=dp.get_precision('Product Price'), store=False)
+    margin_porciento = fields.Float(compute='_product_margin_porc', digits=dp.get_precision('Product Price'), store=False)
+    margin_porciento_disp = fields.Float(compute='_product_margin_disp', digits=dp.get_precision('Product Price'), store=False)
+    amount_untaxed_disp = fields.Monetary(string='Base imponible', store=False, readonly=True, compute='_amount_all_disp')
     amount_tax_disp = fields.Monetary(string='Impuestos', store=True, readonly=True, compute='_amount_all_disp')
     amount_total_disp = fields.Monetary(string='Total', store=True, readonly=True, compute='_amount_all_disp')
 
@@ -77,20 +77,11 @@ class SaleOrder(models.Model):
 
     @api.depends('order_line.margin_disp')
     def _product_margin_disp(self):
-        if self.env.in_onchange:
-            for order in self:
+        for order in self:
+            if order.order_line:
                 order.margin_disp = sum(order.order_line.filtered(lambda r: r.state != 'cancel').mapped('margin_disp'))
                 order.margin_porciento_disp = order.margin_disp/order.amount_untaxed_disp*100 if order.amount_untaxed_disp>0 else 0
-        else:
-            grouped_order_lines_data = self.env['sale.order.line'].read_group(
-                [
-                    ('order_id', 'in', self.ids),
-                    ('state', '!=', 'cancel'),
-                ], ['margin_disp', 'order_id'], ['order_id'])
-            for data in grouped_order_lines_data:
-                order = self.browse(data['order_id'][0])
-                order.margin_disp = data['margin_disp']
-                order.margin_porciento_disp = order.margin_disp/order.amount_untaxed_disp*100 if order.amount_untaxed_disp>0 else 0
+       
 
     @api.depends('order_line.price_total_disp')
     def _amount_all_disp(self):
