@@ -162,7 +162,6 @@ class SaleOrderBackorderLine(models.Model):
             product_uom_dispon =  line.product_id.qty_available - line.product_id.outgoing_qty
             line.product_uom_dispon = product_uom_dispon if product_uom_dispon > 0 else 0
 
-    @api.depends('product_id', 'backorder_id.date', 'product_id.virtual_available')
     def _compute_date_prev(self):
         for line in self:
             line.product_qty_prev = 0
@@ -192,5 +191,4 @@ class SaleOrderBackorderLine(models.Model):
         for line in self:
             price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
             line.price_subtotal = price * line.product_qty_confirmed
-    
-    
+        
