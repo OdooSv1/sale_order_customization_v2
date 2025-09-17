@@ -26,6 +26,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="back_order_id" attrs="{'invisible': [('back_order_id', '=', False)]}"/>
+                <field name="back_order_origin_id" attrs="{'invisible': [('back_order_origin_id', '=', False)]}"/>
                 <field name="requested_date" attrs="{'invisible': [('state', 'in', ['draft', 'sent'])]}" readonly="1"/>
             </xpath>
             <xpath expr="//page//field[@name='order_line']//tree//field[@name='product_uom_qty']" position="after">
