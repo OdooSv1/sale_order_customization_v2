@@ -33,7 +33,7 @@
                 <field name="qty_available" attrs="{'column_invisible': [('parent.state', 'not in', ['draft', 'sent'])]}"/>
             </xpath>
             <xpath expr="//page//field[@name='order_line']//tree//field[@name='price_total']" position="after">
-                <field name="price_total_disp" string="Total disp" attrs="{'column_invisible': [('parent.state', 'not in', ['draft', 'sent'])]}"/>
+                <field name="price_subtotal_disp" attrs="{'column_invisible': [('parent.state', 'not in', ['draft', 'sent'])]}"/>
             </xpath>
             <xpath expr="//page//field[@name='order_line']//tree//field[@name='name']" position="attributes">
                 <attribute name="invisible">1</attribute>

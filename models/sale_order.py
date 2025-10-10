@@ -102,7 +102,7 @@ class SaleOrder(models.Model):
             raise exceptions.UserError("La cantidad del producto de todas las líneas debe ser mayor a cero.")
         self.back_order_id = False
         shortage_lines = self.order_line.filtered(lambda l: l.qty_available < l.product_uom_qty)
-        if not self.back_order_origin_id and shortage_lines and self.env.context.get('origin_backorder')!=1:
+        if shortage_lines and self.env.context.get('origin_backorder')!=1:
             backorder_id = self.env['sale.order.backorder'].create({
                 'sale_order_origin_id': self.id,
                 'partner_id': self.partner_id.id,
@@ -123,7 +123,6 @@ class SaleOrder(models.Model):
                     'product_uom_qty': cant_pendiente,
                     'discount': line.discount,
                     'price_unit': line.price_unit,
-                    'price_base': line.base_price_unit,
                     'backorder_id': backorder_id.id                    
                 })           
         
