@@ -10,7 +10,7 @@ class SaleOrderBackorder(models.Model):
     _name = "sale.order.backorder"
     _order = "date desc, id desc"
 
-    name = fields.Char(compute='_compute_name', store=False, string="Número")
+    name = fields.Char(compute='_compute_name', store=True, string="Número")
     sale_order_origin_id = fields.Many2one('sale.order', string="Pedido de venta origen", readonly=True, required=True)
     sale_order_generada_ids = fields.One2many('sale.order', 'back_order_origin_id', string="Pedidos de venta generado", readonly=True)
     partner_id = fields.Many2one('res.partner', string="Cliente", readonly=True, related="sale_order_origin_id.partner_id")
@@ -42,6 +42,12 @@ class SaleOrderBackorder(models.Model):
             else:
                 record.name = False
 
+    @api.model
+    def create(self, vals):
+        line = super(SaleOrderBackorder, self).create(vals)
+        line._compute_name()
+        return line
+    
     @api.depends('line_ids.date_prev')
     def _compute_fecha_prevista(self):
         for order in self:
@@ -105,12 +111,16 @@ class SaleOrderBackorder(models.Model):
                     'product_uom_qty': line.product_qty_confirmed,
                     'discount': line.discount,
                     'price_unit': line.price_unit,
+                    'base_price_unit': line.price_base,
                     'order_id': sale_order_id.id
                 })
             group_len = len(group)
             if group[group_len-1].date_prev:
-                # Zona horaria del usuario
-                local_tz = pytz.timezone(self.env.user.partner_id.tz)
+                if self.env.user.partner_id.tz:
+                    # Zona horaria del usuario
+                    local_tz = pytz.timezone(self.env.user.partner_id.tz)
+                else:
+                    local_tz = pytz.timezone(self._context.get('tz') or 'America/Lima')
                 # 1. Crear el datetime en la zona local
                 dt_local = local_tz.localize(datetime.strptime(group[group_len-1].date_prev + ' 00:00:00', DEFAULT_SERVER_DATETIME_FORMAT))
 
@@ -169,7 +179,7 @@ class SaleOrderBackorderLine(models.Model):
                 move = self.env['purchase.order.line'].search([
                     ('order_id.state', '=', 'purchase'),
                     ('product_id', '=', line.product_id.id),
-                    ('date_planned', '>=', line.backorder_id.date)
+                    ('qty_received', '=', 0)
                 ], order='date_planned asc', limit=1)
                 if move:
                     line.date_prev = move.date_planned
