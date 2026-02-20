@@ -99,18 +99,17 @@ class SaleOrder(models.Model):
     def write(self, vals):
         """
         Bloquea la modificación de pedidos confirmados.
-        Permite: confirmación (state -> 'sale'/'done'), cancelación (state -> 'cancel'),
-        y cualquier write cuando allow_confirmed_write está en contexto.
+        Se permite la escritura solo cuando el contexto incluye
+        la clave 'allow_confirmed_write' (usada, por ejemplo, al cancelar).
         """
         if not self.env.context.get('allow_confirmed_write'):
-            # Permitir si estamos confirmando (pasando a sale/done) o cancelando
-            new_state = vals.get('state')
-            if new_state not in ('sale', 'done', 'cancel'):
-                if any(order.state in ('sale', 'done') for order in self):
-                    raise exceptions.UserError(
-                        "No se puede modificar un pedido de venta confirmado. "
-                        "Solo se permite su cancelación."
-                    )
+            # Si hay al menos un pedido confirmado o realizado en el conjunto,
+            # se bloquea cualquier modificación.
+            if any(order.state in ('sale', 'done') for order in self):
+                raise exceptions.UserError(
+                    "No se puede modificar un pedido de venta confirmado. "
+                    "Solo se permite su cancelación."
+                )
         return super(SaleOrder, self).write(vals)
 
     def action_cancel(self):
