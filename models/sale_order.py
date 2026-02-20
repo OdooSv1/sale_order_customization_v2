@@ -96,30 +96,6 @@ class SaleOrder(models.Model):
             order.amount_tax_disp = amount_tax_disp
             order.amount_total_disp = amount_untaxed_disp + amount_tax_disp
 
-    def write(self, vals):
-        """
-        Bloquea la modificación de pedidos confirmados.
-        Se permite la escritura solo cuando el contexto incluye
-        la clave 'allow_confirmed_write' (usada, por ejemplo, al cancelar).
-        """
-        if not self.env.context.get('allow_confirmed_write'):
-            # Si hay al menos un pedido confirmado o realizado en el conjunto,
-            # se bloquea cualquier modificación.
-            if any(order.state in ('sale', 'done') for order in self):
-                raise exceptions.UserError(
-                    "No se puede modificar un pedido de venta confirmado. "
-                    "Solo se permite su cancelación."
-                )
-        return super(SaleOrder, self).write(vals)
-
-    def action_cancel(self):
-        """
-        Permite cancelar incluso pedidos confirmados,
-        levantando la restricción de escritura mediante el contexto.
-        """
-        self = self.with_context(allow_confirmed_write=True)
-        return super(SaleOrder, self).action_cancel()
-
     def action_confirm(self):
         # Validación única de cantidades
         if any(line.product_uom_qty <= 0 for line in self.order_line):
