@@ -119,6 +119,8 @@ class SaleOrder(models.Model):
         return super(SaleOrder, self).action_cancel()
 
     def action_confirm(self):
+        # Permitir todos los writes durante la confirmación (evita bloquear writes internos de Odoo)
+        self = self.with_context(allow_confirmed_write=True)
         # Validación única de cantidades
         if any(line.product_uom_qty <= 0 for line in self.order_line):
             raise exceptions.UserError("La cantidad del producto de todas las líneas debe ser mayor a cero.")
